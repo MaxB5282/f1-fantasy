@@ -38,82 +38,79 @@ with tab1:
 
     if not races:
         st.info("Add a race first in the 'Add Race' tab.")
-        st.stop()
-
-    if not drivers:
+    elif not drivers:
         st.warning("No drivers found. Run setup.sql in your Supabase dashboard.")
-        st.stop()
+    else:
+        race_labels = [f"Round {r['round_number']}: {r['name']}" for r in races]
+        selected_idx = st.selectbox(
+            "Select Race",
+            range(len(race_labels)),
+            format_func=lambda i: race_labels[i],
+        )
+        race_id = races[selected_idx]["id"]
 
-    race_labels = [f"Round {r['round_number']}: {r['name']}" for r in races]
-    selected_idx = st.selectbox(
-        "Select Race",
-        range(len(race_labels)),
-        format_func=lambda i: race_labels[i],
-    )
-    race_id = races[selected_idx]["id"]
+        # Load existing results for pre-filling
+        existing = {r["driver_id"]: r for r in get_race_results(supabase, race_id)}
 
-    # Load existing results for pre-filling
-    existing = {r["driver_id"]: r for r in get_race_results(supabase, race_id)}
-
-    st.write(
-        "Edit the table below. **Qual Pos** = qualifying result, "
-        "**Grid Pos** = actual starting position (may differ due to penalties), "
-        "**Race Pos** = finishing position. Check **DNF** if the driver didn't finish."
-    )
-
-    # Build editable dataframe
-    rows = []
-    for d in sorted(drivers, key=lambda x: x["name"]):
-        ex = existing.get(d["id"], {})
-        rows.append(
-            {
-                "_driver_id": d["id"],
-                "Driver": d["name"],
-                "Constructor": d["constructor"],
-                "Qual Pos": ex.get("qualifying_pos") or 10,
-                "Grid Pos": ex.get("grid_pos") or 10,
-                "Race Pos": ex.get("race_pos") or 10,
-                "DNF": ex.get("dnf") or False,
-            }
+        st.write(
+            "Edit the table below. **Qual Pos** = qualifying result, "
+            "**Grid Pos** = actual starting position (may differ due to penalties), "
+            "**Race Pos** = finishing position. Check **DNF** if the driver didn't finish."
         )
 
-    edited = st.data_editor(
-        pd.DataFrame(rows),
-        column_config={
-            "_driver_id": None,  # hidden
-            "Driver": st.column_config.TextColumn(disabled=True),
-            "Constructor": st.column_config.TextColumn(disabled=True),
-            "Qual Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
-            "Grid Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
-            "Race Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
-            "DNF": st.column_config.CheckboxColumn(),
-        },
-        hide_index=True,
-        use_container_width=True,
-    )
-
-    if st.button("Save Results", type="primary"):
-        to_save = []
-        for _, row in edited.iterrows():
-            qual = int(row["Qual Pos"])
-            grid = int(row["Grid Pos"])
-            dnf = bool(row["DNF"])
-            race_pos = None if dnf else int(row["Race Pos"])
-            pts = calculate_driver_points(qual, grid, race_pos, dnf)
-            to_save.append(
+        # Build editable dataframe
+        rows = []
+        for d in sorted(drivers, key=lambda x: x["name"]):
+            ex = existing.get(d["id"], {})
+            rows.append(
                 {
-                    "race_id": race_id,
-                    "driver_id": int(row["_driver_id"]),
-                    "qualifying_pos": qual,
-                    "grid_pos": grid,
-                    "race_pos": race_pos,
-                    "dnf": dnf,
-                    "base_points": pts,
+                    "_driver_id": d["id"],
+                    "Driver": d["name"],
+                    "Constructor": d["constructor"],
+                    "Qual Pos": ex.get("qualifying_pos") or 10,
+                    "Grid Pos": ex.get("grid_pos") or 10,
+                    "Race Pos": ex.get("race_pos") or 10,
+                    "DNF": ex.get("dnf") or False,
                 }
             )
-        save_race_results(supabase, race_id, to_save)
-        st.success("Results saved!")
-        st.cache_data.clear()
+
+        edited = st.data_editor(
+            pd.DataFrame(rows),
+            column_config={
+                "_driver_id": None,  # hidden
+                "Driver": st.column_config.TextColumn(disabled=True),
+                "Constructor": st.column_config.TextColumn(disabled=True),
+                "Qual Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
+                "Grid Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
+                "Race Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
+                "DNF": st.column_config.CheckboxColumn(),
+            },
+            hide_index=True,
+            use_container_width=True,
+        )
+
+        if st.button("Save Results", type="primary"):
+            to_save = []
+            for _, row in edited.iterrows():
+                qual = int(row["Qual Pos"])
+                grid = int(row["Grid Pos"])
+                dnf = bool(row["DNF"])
+                race_pos = None if dnf else int(row["Race Pos"])
+                pts = calculate_driver_points(qual, grid, race_pos, dnf)
+                to_save.append(
+                    {
+                        "race_id": race_id,
+                        "driver_id": int(row["_driver_id"]),
+                        "qualifying_pos": qual,
+                        "grid_pos": grid,
+                        "race_pos": race_pos,
+                        "dnf": dnf,
+                        "base_points": pts,
+                    }
+                )
+            save_race_results(supabase, race_id, to_save)
+            st.success("Results saved!")
+            st.cache_data.clear()
 
 # ── Tab 2: Add Race ───────────────────────────────────────────────────────────
 with tab2:

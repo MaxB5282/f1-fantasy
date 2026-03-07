@@ -13,12 +13,12 @@ st.title("🏆 Leaderboard")
 
 
 def get_image(folder, name):
-    """Return image path if it exists, else None. Handles any extension case and accented chars."""
-    import unicodedata
+    """Return EXIF-corrected image bytes, or None if not found."""
+    import unicodedata, io
+    from PIL import Image, ImageOps
     slug = name.lower().replace(" ", "_")
     slug = unicodedata.normalize("NFD", slug)
     slug = "".join(c for c in slug if unicodedata.category(c) != "Mn")
-    # Use absolute path so this works on Streamlit Cloud
     app_root = Path(__file__).parent.parent
     base = app_root / "images" / folder
     if not base.exists():
@@ -26,7 +26,11 @@ def get_image(folder, name):
     valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".jfif"}
     for f in base.iterdir():
         if f.stem.lower() == slug and f.suffix.lower() in valid_exts:
-            return f.read_bytes()
+            img = Image.open(f).convert("RGB")
+            img = ImageOps.exif_transpose(img)
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG")
+            return buf.getvalue()
     return None
 
 

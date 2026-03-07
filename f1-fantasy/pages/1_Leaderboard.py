@@ -35,7 +35,7 @@ def get_image(folder, name):
 
 
 supabase = get_supabase()
-player_totals, player_breakdown = get_leaderboard(supabase)
+player_totals, player_breakdown, adj_log = get_leaderboard(supabase)
 
 if not player_totals:
     st.info("No data yet. Set up teams in Admin, then enter some race results.")
@@ -75,3 +75,8 @@ for pid, p in sorted_players:
             dcols[1].markdown(label)
             dcols[1].caption(f"Round {d['Round']} pick · {d['Base Pts']} base pts")
             dcols[2].metric("Points", d["Total Pts"])
+        # Show waiver penalties if any
+        if pid in adj_log:
+            st.markdown("**Adjustments**")
+            for adj in adj_log[pid]:
+                st.caption(f"{adj['reason']}: **{adj['amount']:+d} pts**")

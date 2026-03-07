@@ -7,9 +7,11 @@ from utils.database import (
     get_races,
     get_player_drivers,
     get_race_results,
+    get_sprint_results,
     save_race_results,
+    save_sprint_results,
 )
-from utils.points import calculate_driver_points
+from utils.points import calculate_driver_points, calculate_sprint_points
 
 st.set_page_config(
     page_title="Admin | Max's F1 League",
@@ -28,7 +30,7 @@ if pw != admin_pw:
 
 supabase = get_supabase()
 
-tab1, tab2, tab3 = st.tabs(["Enter Race Results", "Add Race", "Set Teams"])
+tab1, tab2, tab3, tab4 = st.tabs(["Enter Race Results", "Enter Sprint Results", "Add Race", "Set Teams"])
 
 # ── Tab 1: Enter Race Results ─────────────────────────────────────────────────
 with tab1:
@@ -112,8 +114,8 @@ with tab1:
             st.success("Results saved!")
             st.cache_data.clear()
 
-# ── Tab 2: Add Race ───────────────────────────────────────────────────────────
-with tab2:
+# ── Tab 3: Add Race ───────────────────────────────────────────────────────────
+with tab3:
     st.subheader("Add 2025 Race")
 
     F1_2025_CALENDAR = [
@@ -170,8 +172,8 @@ with tab2:
             use_container_width=True,
         )
 
-# ── Tab 3: Set Teams ──────────────────────────────────────────────────────────
-with tab3:
+# ── Tab 4: Set Teams ────────────────────────────────────────────────────────────
+with tab4:
     st.subheader("Assign Draft Teams")
     st.write(
         "Assign 4 drivers to each player by draft round. "
@@ -222,3 +224,79 @@ with tab3:
             st.rerun()
 
         st.write("")
+
+# ── Tab 2: Enter Sprint Results ───────────────────────────────────────────────
+with tab2:
+    st.subheader("Enter Sprint Results")
+    races = get_races(supabase)
+    drivers = get_drivers(supabase)
+
+    if not races:
+        st.info("Add a race first in the 'Add Race' tab.")
+    elif not drivers:
+        st.warning("No drivers found.")
+    else:
+        race_labels = [f"Round {r['round_number']}: {r['name']}" for r in races]
+        selected_idx = st.selectbox(
+            "Select Race",
+            range(len(race_labels)),
+            format_func=lambda i: race_labels[i],
+            key="sprint_race_select",
+        )
+        race_id = races[selected_idx]["id"]
+
+        existing = {r["driver_id"]: r for r in get_sprint_results(supabase, race_id)}
+
+        st.write(
+            "**Grid Pos** = sprint starting position, **Finish Pos** = sprint finishing position. "
+            "Check **FL** for fastest lap, **DNF** if driver did not finish."
+        )
+
+        rows = []
+        for d in sorted(drivers, key=lambda x: x["name"]):
+            ex = existing.get(d["id"], {})
+            rows.append({
+                "_driver_id": d["id"],
+                "Driver": d["name"],
+                "Constructor": d["constructor"],
+                "Grid Pos": ex.get("grid_pos") or 10,
+                "Finish Pos": ex.get("finish_pos") or 10,
+                "FL": ex.get("fastest_lap") or False,
+                "DNF": ex.get("dnf") or False,
+            })
+
+        edited = st.data_editor(
+            pd.DataFrame(rows),
+            column_config={
+                "_driver_id": None,
+                "Driver": st.column_config.TextColumn(disabled=True),
+                "Constructor": st.column_config.TextColumn(disabled=True),
+                "Grid Pos": st.column_config.NumberColumn(min_value=1, max_value=22, step=1),
+                "Finish Pos": st.column_config.NumberColumn(min_value=1, max_value=22, step=1),
+                "FL": st.column_config.CheckboxColumn(help="Fastest lap (+5 pts)"),
+                "DNF": st.column_config.CheckboxColumn(),
+            },
+            hide_index=True,
+            use_container_width=True,
+        )
+
+        if st.button("Save Sprint Results", type="primary"):
+            to_save = []
+            for _, row in edited.iterrows():
+                grid = int(row["Grid Pos"])
+                finish = int(row["Finish Pos"])
+                fl = bool(row["FL"])
+                dnf = bool(row["DNF"])
+                pts = calculate_sprint_points(grid, finish, fl, dnf)
+                to_save.append({
+                    "race_id": race_id,
+                    "driver_id": int(row["_driver_id"]),
+                    "grid_pos": grid,
+                    "finish_pos": finish if not dnf else None,
+                    "fastest_lap": fl,
+                    "dnf": dnf,
+                    "base_points": pts,
+                })
+            save_sprint_results(supabase, race_id, to_save)
+            st.success("Sprint results saved!")
+            st.cache_data.clear()

@@ -13,12 +13,18 @@ st.title("🏆 Leaderboard")
 
 
 def get_image(folder, name):
-    """Return image path if it exists, else None."""
+    """Return image path if it exists, else None. Handles any extension case and accented chars."""
+    import unicodedata
     slug = name.lower().replace(" ", "_")
-    for ext in ["jpg", "jpeg", "png", "webp"]:
-        path = Path(f"images/{folder}/{slug}.{ext}")
-        if path.exists():
-            return str(path)
+    slug = unicodedata.normalize("NFD", slug)
+    slug = "".join(c for c in slug if unicodedata.category(c) != "Mn")
+    base = Path(f"images/{folder}")
+    if not base.exists():
+        return None
+    valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".jfif"}
+    for f in base.iterdir():
+        if f.stem.lower() == slug and f.suffix.lower() in valid_exts:
+            return str(f)
     return None
 
 

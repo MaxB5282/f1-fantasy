@@ -11,6 +11,29 @@ st.set_page_config(
 
 st.title("🏆 Leaderboard")
 
+# Mobile-friendly CSS: cap image heights so tall portrait photos don't dominate
+st.markdown("""
+<style>
+/* Cap player card images */
+[data-testid="stImage"] img {
+    max-height: 160px;
+    width: 100%;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 8px;
+}
+/* Shrink driver thumbnail images */
+.driver-thumb img {
+    max-height: 60px !important;
+}
+@media (max-width: 768px) {
+    [data-testid="stImage"] img {
+        max-height: 90px;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 def get_image(folder, name):
     """Return EXIF-corrected image bytes, or None if not found."""
@@ -66,7 +89,7 @@ for pid, p in sorted_players:
             dcols = st.columns([1, 4, 3])
             img = get_image("drivers", d["Driver"])
             if img:
-                dcols[0].image(img, width=60)
+                dcols[0].image(img, width=50)
             else:
                 dcols[0].write("")
             label = f"**{d['Driver']}**"

@@ -18,13 +18,15 @@ def get_image(folder, name):
     slug = name.lower().replace(" ", "_")
     slug = unicodedata.normalize("NFD", slug)
     slug = "".join(c for c in slug if unicodedata.category(c) != "Mn")
-    base = Path(f"images/{folder}")
+    # Use absolute path so this works on Streamlit Cloud
+    app_root = Path(__file__).parent.parent
+    base = app_root / "images" / folder
     if not base.exists():
         return None
     valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".jfif"}
     for f in base.iterdir():
         if f.stem.lower() == slug and f.suffix.lower() in valid_exts:
-            return str(f)
+            return f.read_bytes()
     return None
 
 

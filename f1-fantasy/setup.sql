@@ -37,9 +37,9 @@ CREATE TABLE IF NOT EXISTS race_results (
     id            SERIAL PRIMARY KEY,
     race_id       INTEGER REFERENCES races(id)   ON DELETE CASCADE,
     driver_id     INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
-    qualifying_pos INTEGER CHECK (qualifying_pos BETWEEN 1 AND 20),
-    grid_pos       INTEGER CHECK (grid_pos       BETWEEN 1 AND 20),
-    race_pos       INTEGER CHECK (race_pos       BETWEEN 1 AND 20),
+    qualifying_pos INTEGER CHECK (qualifying_pos BETWEEN 1 AND 22),
+    grid_pos       INTEGER CHECK (grid_pos       BETWEEN 1 AND 22),
+    race_pos       INTEGER CHECK (race_pos       BETWEEN 1 AND 22),
     dnf            BOOLEAN NOT NULL DEFAULT FALSE,
     base_points    FLOAT   NOT NULL DEFAULT 0,
     UNIQUE(race_id, driver_id)

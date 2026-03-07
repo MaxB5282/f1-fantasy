@@ -80,9 +80,9 @@ with tab1:
                 "_driver_id": None,  # hidden
                 "Driver": st.column_config.TextColumn(disabled=True),
                 "Constructor": st.column_config.TextColumn(disabled=True),
-                "Qual Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
-                "Grid Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
-                "Race Pos": st.column_config.NumberColumn(min_value=1, max_value=20, step=1),
+                "Qual Pos": st.column_config.NumberColumn(min_value=1, max_value=22, step=1),
+                "Grid Pos": st.column_config.NumberColumn(min_value=1, max_value=22, step=1),
+                "Race Pos": st.column_config.NumberColumn(min_value=1, max_value=22, step=1),
                 "DNF": st.column_config.CheckboxColumn(),
             },
             hide_index=True,

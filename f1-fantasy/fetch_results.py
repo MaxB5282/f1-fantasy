@@ -55,12 +55,14 @@ def normalize(name: str) -> str:
 def is_dnf(status) -> bool:
     if not status or (isinstance(status, float) and pd.isna(status)):
         return False
-    s = str(status).strip()
-    if s == "Finished":
+    s = str(status).strip().lower()
+    if s == "finished":
         return False
-    if s.startswith("+") and "Lap" in s:   # "+1 Lap", "+2 Laps", etc.
+    if s == "lapped":                       # classified finisher, 1+ laps down
         return False
-    return True   # Accident, Engine, Retired, Collision, Disqualified, etc.
+    if s.startswith("+") and "lap" in s:   # "+1 Lap", "+2 Laps", etc.
+        return False
+    return True   # Retired, Accident, Engine, Did not start, etc.
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -117,7 +119,8 @@ def main():
 
     qual_pos = {}
     for _, row in qual.results.iterrows():
-        qual_pos[normalize(str(row["FullName"]))] = int(row["Position"])
+        if pd.notna(row.get("Position")):
+            qual_pos[normalize(str(row["FullName"]))] = int(row["Position"])
 
     # ── Race ───────────────────────────────────────────────────────────────────
     print("Loading Race...")
@@ -134,6 +137,8 @@ def main():
     except Exception as e:
         print(f"Could not determine race fastest lap: {e}")
 
+    total_starters = len(race_sess.results)
+
     race_rows = []
     print()
     print(f"{'── Race Results ':-<60}")
@@ -148,15 +153,23 @@ def main():
             print(f"  WARNING: '{name}' not in DB — skipping")
             continue
 
-        q    = qual_pos.get(name)
-        grid = int(row["GridPosition"]) if pd.notna(row.get("GridPosition")) else q
-        fin  = int(row["Position"])     if pd.notna(row.get("Position"))     else None
-        dnf  = is_dnf(row.get("Status"))
-        fl   = (name == fastest_lap_driver)
+        q        = qual_pos.get(name)
+        raw_grid = row.get("GridPosition")
+        # Use FastF1 grid if valid, else fall back to qual pos, else last on grid
+        if pd.notna(raw_grid) and int(raw_grid) > 0:
+            grid = int(raw_grid)
+        elif q is not None:
+            grid = q
+        else:
+            grid = total_starters  # started from the back (no qualifying time)
+        fin    = int(row["Position"]) if pd.notna(row.get("Position")) else None
+        status = str(row.get("Status", "")).strip()
+        dnf    = is_dnf(status)
+        fl     = (name == fastest_lap_driver)
 
         pts = calculate_driver_points(q, grid, fin, dnf, fl)
 
-        print(f"  {name:<24}  {str(q):>3}  {str(grid):>4}  {'DNF' if dnf else str(fin):>4}  {'✓' if fl else '':>3}  {str(dnf):>5}  {pts:>6.1f}")
+        print(f"  {name:<24}  {str(q):>3}  {str(grid):>4}  {'DNF' if dnf else str(fin):>4}  {'✓' if fl else '':>3}  {str(dnf):>5}  {pts:>6.1f}  [{status}]")
 
         race_rows.append({
             "race_id":        race_db_id,

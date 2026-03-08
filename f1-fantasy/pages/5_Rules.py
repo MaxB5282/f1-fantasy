@@ -32,7 +32,7 @@ with st.expander("🏁 Regular Race — Bonuses & Penalties", expanded=False):
     st.dataframe(
         {
             "Event":  ["Position gained", "Position lost", "Fastest lap", "DNF"],
-            "Points": ["+2 each", "-1 each", "+3", "-5"],
+            "Points": ["+2 each (max +10)", "-1 each", "+3", "-5"],
         },
         hide_index=True,
         use_container_width=True,

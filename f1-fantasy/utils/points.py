@@ -38,8 +38,14 @@ def calculate_driver_points(qualifying_pos, grid_pos, race_pos, dnf=False, faste
         return qual_pts + DNF_PENALTY
 
     race_pts = RACE_POINTS.get(race_pos, 0)
-    net = grid_pos - race_pos  # positive = gained positions
-    pos_pts = net * POSITIONS_GAINED_PTS if net > 0 else net * abs(POSITIONS_LOST_PTS)
+    if grid_pos is not None and race_pos is not None:
+        net = grid_pos - race_pos  # positive = gained positions
+        if net > 0:
+            pos_pts = min(net * POSITIONS_GAINED_PTS, 10)  # cap gains at 10 pts
+        else:
+            pos_pts = net * abs(POSITIONS_LOST_PTS)
+    else:
+        pos_pts = 0
     fl_pts = FASTEST_LAP_PTS if fastest_lap else 0
 
     return qual_pts + race_pts + pos_pts + fl_pts

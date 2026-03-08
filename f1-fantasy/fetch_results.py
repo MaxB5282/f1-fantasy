@@ -68,7 +68,7 @@ def is_dnf(status) -> bool:
 def main():
     parser = argparse.ArgumentParser(description="Fetch F1 results and upload to Supabase")
     parser.add_argument("--round",   type=int, required=True, help="F1 round number")
-    parser.add_argument("--year",    type=int, default=2025,  help="Season year (default: 2025)")
+    parser.add_argument("--year",    type=int, default=2026,  help="Season year (default: 2026)")
     parser.add_argument("--dry-run", action="store_true",     help="Print results without uploading")
     args = parser.parse_args()
 

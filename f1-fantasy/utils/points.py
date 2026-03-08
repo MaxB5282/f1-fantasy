@@ -1,8 +1,9 @@
 # ── Regular Race ──────────────────────────────────────────────────────────────
 QUALIFYING_POINTS = {
-    1: 10, 2: 9, 3: 8, 4: 7, 5: 6,
-    6: 5, 7: 4, 8: 3, 9: 2, 10: 1,
+    1: 15, 2: 14, 3: 13, 4: 12, 5: 11,
+    6: 10, 7: 9, 8: 8, 9: 7, 10: 6,
 }
+QUALIFYING_POINTS_DEFAULT = 5  # P11+ get 5 pts
 
 RACE_POINTS = {
     1: 25, 2: 18, 3: 15, 4: 12, 5: 10,
@@ -32,7 +33,7 @@ WAIVER_PICKUP_PENALTY = -20
 
 def calculate_driver_points(qualifying_pos, grid_pos, race_pos, dnf=False, fastest_lap=False):
     """Calculate base points for a driver in a regular race."""
-    qual_pts = QUALIFYING_POINTS.get(qualifying_pos, 0)
+    qual_pts = QUALIFYING_POINTS.get(qualifying_pos, QUALIFYING_POINTS_DEFAULT if qualifying_pos else 0)
 
     if dnf:
         return qual_pts + DNF_PENALTY

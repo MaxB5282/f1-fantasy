@@ -12,7 +12,7 @@ with st.expander("🏁 Regular Race — Qualifying", expanded=False):
     st.dataframe(
         {
             "Position": ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10", "P11+"],
-            "Points":   [10,    9,    8,    7,    6,    5,    4,    3,    2,    1,     0],
+            "Points":   [15,   14,   13,   12,   11,   10,    9,    8,    7,    6,     5],
         },
         hide_index=True,
         use_container_width=True,

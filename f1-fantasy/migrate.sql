@@ -3,6 +3,10 @@
 -- Run this in your Supabase SQL Editor.
 -- ============================================================
 
+-- Add fastest_lap to race_results (run if upgrading from an earlier version)
+ALTER TABLE race_results
+    ADD COLUMN IF NOT EXISTS fastest_lap BOOLEAN NOT NULL DEFAULT FALSE;
+
 -- Sprint race results
 CREATE TABLE IF NOT EXISTS sprint_results (
     id          SERIAL PRIMARY KEY,

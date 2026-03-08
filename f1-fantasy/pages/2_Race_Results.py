@@ -36,6 +36,7 @@ for r in results:
             "Qual Pos": r["qualifying_pos"],
             "Grid Pos": r["grid_pos"],
             "Finish": "DNF" if r["dnf"] else r["race_pos"],
+            "FL": "⚡" if r.get("fastest_lap") else "",
             "Points": r["base_points"],
         }
     )

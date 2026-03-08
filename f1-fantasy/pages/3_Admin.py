@@ -72,6 +72,7 @@ with tab1:
                     "Qual Pos": ex.get("qualifying_pos") or 10,
                     "Grid Pos": ex.get("grid_pos") or 10,
                     "Race Pos": ex.get("race_pos") or 10,
+                    "FL": ex.get("fastest_lap") or False,
                     "DNF": ex.get("dnf") or False,
                 }
             )
@@ -85,6 +86,7 @@ with tab1:
                 "Qual Pos": st.column_config.NumberColumn(min_value=1, max_value=22, step=1),
                 "Grid Pos": st.column_config.NumberColumn(min_value=1, max_value=22, step=1),
                 "Race Pos": st.column_config.NumberColumn(min_value=1, max_value=22, step=1),
+                "FL": st.column_config.CheckboxColumn(help="Fastest lap (+3 pts)"),
                 "DNF": st.column_config.CheckboxColumn(),
             },
             hide_index=True,
@@ -96,9 +98,10 @@ with tab1:
             for _, row in edited.iterrows():
                 qual = int(row["Qual Pos"])
                 grid = int(row["Grid Pos"])
+                fl = bool(row["FL"])
                 dnf = bool(row["DNF"])
                 race_pos = None if dnf else int(row["Race Pos"])
-                pts = calculate_driver_points(qual, grid, race_pos, dnf)
+                pts = calculate_driver_points(qual, grid, race_pos, dnf, fl)
                 to_save.append(
                     {
                         "race_id": race_id,
@@ -106,6 +109,7 @@ with tab1:
                         "qualifying_pos": qual,
                         "grid_pos": grid,
                         "race_pos": race_pos,
+                        "fastest_lap": fl,
                         "dnf": dnf,
                         "base_points": pts,
                     }

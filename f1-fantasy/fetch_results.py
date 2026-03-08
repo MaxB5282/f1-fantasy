@@ -122,13 +122,23 @@ def main():
     # ── Race ───────────────────────────────────────────────────────────────────
     print("Loading Race...")
     race_sess = event.get_session("R")
-    race_sess.load(laps=False, telemetry=False, weather=False, messages=False)
+    race_sess.load(laps=True, telemetry=False, weather=False, messages=False)
+
+    # Detect fastest lap in race
+    fastest_lap_driver = None
+    try:
+        fl_lap  = race_sess.laps.pick_fastest()
+        fl_info = race_sess.get_driver(fl_lap["DriverNumber"])
+        fastest_lap_driver = normalize(str(fl_info["FullName"]))
+        print(f"Race fastest lap: {fastest_lap_driver}")
+    except Exception as e:
+        print(f"Could not determine race fastest lap: {e}")
 
     race_rows = []
     print()
     print(f"{'── Race Results ':-<60}")
-    print(f"  {'Driver':<24}  {'Q':>3}  {'Grid':>4}  {'Fin':>4}  {'DNF':>5}  {'Pts':>6}")
-    print(f"  {'-'*56}")
+    print(f"  {'Driver':<24}  {'Q':>3}  {'Grid':>4}  {'Fin':>4}  {'FL':>3}  {'DNF':>5}  {'Pts':>6}")
+    print(f"  {'-'*58}")
 
     for _, row in race_sess.results.iterrows():
         name      = normalize(str(row["FullName"]))
@@ -142,10 +152,11 @@ def main():
         grid = int(row["GridPosition"]) if pd.notna(row.get("GridPosition")) else q
         fin  = int(row["Position"])     if pd.notna(row.get("Position"))     else None
         dnf  = is_dnf(row.get("Status"))
+        fl   = (name == fastest_lap_driver)
 
-        pts = calculate_driver_points(q, grid, fin, dnf)
+        pts = calculate_driver_points(q, grid, fin, dnf, fl)
 
-        print(f"  {name:<24}  {str(q):>3}  {str(grid):>4}  {'DNF' if dnf else str(fin):>4}  {str(dnf):>5}  {pts:>6.1f}")
+        print(f"  {name:<24}  {str(q):>3}  {str(grid):>4}  {'DNF' if dnf else str(fin):>4}  {'✓' if fl else '':>3}  {str(dnf):>5}  {pts:>6.1f}")
 
         race_rows.append({
             "race_id":        race_db_id,
@@ -153,6 +164,7 @@ def main():
             "qualifying_pos": q,
             "grid_pos":       grid,
             "race_pos":       None if dnf else fin,
+            "fastest_lap":    fl,
             "dnf":            dnf,
             "base_points":    pts,
         })

@@ -11,6 +11,7 @@ RACE_POINTS = {
 
 POSITIONS_GAINED_PTS = 2   # per position gained in race
 POSITIONS_LOST_PTS = -1    # per position lost in race
+FASTEST_LAP_PTS = 3        # bonus for fastest lap in regular race
 DNF_PENALTY = -5
 
 # ── Sprint Race ───────────────────────────────────────────────────────────────
@@ -29,7 +30,7 @@ FOURTH_ROUND_MULTIPLIER = 3
 WAIVER_PICKUP_PENALTY = -20
 
 
-def calculate_driver_points(qualifying_pos, grid_pos, race_pos, dnf=False):
+def calculate_driver_points(qualifying_pos, grid_pos, race_pos, dnf=False, fastest_lap=False):
     """Calculate base points for a driver in a regular race."""
     qual_pts = QUALIFYING_POINTS.get(qualifying_pos, 0)
 
@@ -39,8 +40,9 @@ def calculate_driver_points(qualifying_pos, grid_pos, race_pos, dnf=False):
     race_pts = RACE_POINTS.get(race_pos, 0)
     net = grid_pos - race_pos  # positive = gained positions
     pos_pts = net * POSITIONS_GAINED_PTS if net > 0 else net * abs(POSITIONS_LOST_PTS)
+    fl_pts = FASTEST_LAP_PTS if fastest_lap else 0
 
-    return qual_pts + race_pts + pos_pts
+    return qual_pts + race_pts + pos_pts + fl_pts
 
 
 def calculate_sprint_points(grid_pos, finish_pos, fastest_lap=False, dnf=False):

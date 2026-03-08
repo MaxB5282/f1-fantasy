@@ -7,6 +7,14 @@
 ALTER TABLE race_results
     ADD COLUMN IF NOT EXISTS fastest_lap BOOLEAN NOT NULL DEFAULT FALSE;
 
+-- Expand position constraints from 20 to 22 (2026 grid has 22 drivers)
+ALTER TABLE race_results DROP CONSTRAINT IF EXISTS race_results_qualifying_pos_check;
+ALTER TABLE race_results DROP CONSTRAINT IF EXISTS race_results_grid_pos_check;
+ALTER TABLE race_results DROP CONSTRAINT IF EXISTS race_results_race_pos_check;
+ALTER TABLE race_results ADD CONSTRAINT race_results_qualifying_pos_check CHECK (qualifying_pos BETWEEN 1 AND 22);
+ALTER TABLE race_results ADD CONSTRAINT race_results_grid_pos_check       CHECK (grid_pos       BETWEEN 1 AND 22);
+ALTER TABLE race_results ADD CONSTRAINT race_results_race_pos_check       CHECK (race_pos       BETWEEN 1 AND 22);
+
 -- Sprint race results
 CREATE TABLE IF NOT EXISTS sprint_results (
     id          SERIAL PRIMARY KEY,

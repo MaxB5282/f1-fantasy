@@ -1,0 +1,4 @@
+# Dependencies for fetch_results.py (local use only, not needed on Streamlit Cloud)
+fastf1>=3.3.0
+supabase>=2.3.0
+tomli>=2.0.0   # only needed on Python < 3.11

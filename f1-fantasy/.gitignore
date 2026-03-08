@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+fastf1_cache/

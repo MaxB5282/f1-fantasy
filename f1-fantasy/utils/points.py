@@ -65,5 +65,7 @@ def calculate_sprint_points(grid_pos, finish_pos, fastest_lap=False, dnf=False):
 
 
 def apply_multiplier(base_points, draft_round):
-    """Apply draft round multiplier to base points."""
-    return base_points * FOURTH_ROUND_MULTIPLIER if draft_round == 4 else base_points
+    """Apply draft round multiplier to base points (only on positive totals)."""
+    if draft_round == 4 and base_points > 0:
+        return base_points * FOURTH_ROUND_MULTIPLIER
+    return base_points

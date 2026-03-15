@@ -94,7 +94,7 @@ def process_waiver_pickup(supabase, player_id, picked_driver_id, dropped_driver_
 
 
 def get_leaderboard(supabase):
-    """Return (player_totals dict, player_breakdown dict, player_adjustments dict)."""
+    """Return (player_totals, player_breakdown, adj_log, player_round_pts)."""
     player_drivers = (
         supabase.table("player_drivers")
         .select("player_id, driver_id, draft_round, players(id, name), drivers(id, name)")
@@ -102,17 +102,58 @@ def get_leaderboard(supabase):
         .data
     )
 
-    # Sum race base points per driver
+    # Build driver -> {pid, draft_round} mapping
+    driver_to_player = {
+        pd["driver_id"]: {"pid": pd["player_id"], "draft_round": pd["draft_round"]}
+        for pd in player_drivers
+    }
+
+    # Fetch results with race info for per-round breakdown
+    race_results = (
+        supabase.table("race_results")
+        .select("driver_id, base_points, race_id, races(id, round_number, name)")
+        .execute()
+        .data
+    )
+    sprint_results = (
+        supabase.table("sprint_results")
+        .select("driver_id, base_points, race_id, races(id, round_number, name)")
+        .execute()
+        .data
+    )
+
+    # Sum base points per driver (for overall totals)
     driver_race_pts = {}
-    for r in supabase.table("race_results").select("driver_id, base_points").execute().data:
+    for r in race_results:
         did = r["driver_id"]
         driver_race_pts[did] = driver_race_pts.get(did, 0) + (r["base_points"] or 0)
 
-    # Sum sprint base points per driver
     driver_sprint_pts = {}
-    for r in supabase.table("sprint_results").select("driver_id, base_points").execute().data:
+    for r in sprint_results:
         did = r["driver_id"]
         driver_sprint_pts[did] = driver_sprint_pts.get(did, 0) + (r["base_points"] or 0)
+
+    # Per-player per-race points (multiplier applied per race for weekly view)
+    player_round_pts = {}  # {pid: {race_id: {"name": str, "round": int, "pts": float}}}
+    for r in race_results + sprint_results:
+        did = r["driver_id"]
+        if did not in driver_to_player:
+            continue
+        info = driver_to_player[did]
+        pid = info["pid"]
+        draft_round = info["draft_round"]
+        race_id = r["race_id"]
+        race_info = r.get("races") or {}
+        base = r["base_points"] or 0
+        pts = apply_multiplier(base, draft_round)
+        player_round_pts.setdefault(pid, {})
+        if race_id not in player_round_pts[pid]:
+            player_round_pts[pid][race_id] = {
+                "name": race_info.get("name", ""),
+                "round": race_info.get("round_number", 0),
+                "pts": 0,
+            }
+        player_round_pts[pid][race_id]["pts"] = round(player_round_pts[pid][race_id]["pts"] + pts, 1)
 
     # Point adjustments per player (waiver penalties etc.)
     player_adj = {}
@@ -154,4 +195,4 @@ def get_leaderboard(supabase):
             player_totals[pid]["total"] += adj
             player_totals[pid]["adjustments"] = adj
 
-    return player_totals, player_breakdown, adj_log
+    return player_totals, player_breakdown, adj_log, player_round_pts

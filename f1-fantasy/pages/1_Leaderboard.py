@@ -1,6 +1,7 @@
 import streamlit as st
 import base64
 import io
+import pandas as pd
 from pathlib import Path
 from utils.database import get_supabase, get_leaderboard
 
@@ -154,7 +155,7 @@ def get_image_b64(folder, name):
 
 
 supabase = get_supabase()
-player_totals, player_breakdown, adj_log = get_leaderboard(supabase)
+player_totals, player_breakdown, adj_log, player_round_pts = get_leaderboard(supabase)
 
 if not player_totals:
     st.info("No data yet. Set up teams in Admin, then enter some race results.")
@@ -198,7 +199,7 @@ for pid, p in sorted_players:
                 img_html = f'<img src="data:image/jpeg;base64,{b64}" alt="{d["Driver"]}">'
             else:
                 img_html = '<div class="driver-img-placeholder"></div>'
-            multiplier_badge = ' <span style="color:#e10600;font-size:0.8em">✦ 3×</span>' if d["Round"] == 4 else ""
+            multiplier_badge = ' <span style="color:#e10600;font-size:0.8em">✦ 2×</span>' if d["Round"] == 4 else ""
             rows_html += f"""
             <div class="driver-row">
                 <div class="driver-left">
@@ -219,3 +220,33 @@ for pid, p in sorted_players:
 
         rows_html += '</div>'
         st.markdown(rows_html, unsafe_allow_html=True)
+
+st.divider()
+
+# ── Round-by-round point differential ────────────────────────────────────────
+st.subheader("Round-by-Round Scores")
+
+# Collect all races across all players
+all_races = {}  # {race_id: {"name": str, "round": int}}
+for pid, rounds in player_round_pts.items():
+    for race_id, info in rounds.items():
+        if race_id not in all_races:
+            all_races[race_id] = {"name": info["name"], "round": info["round"]}
+
+if all_races:
+    sorted_races = sorted(all_races.values(), key=lambda x: x["round"])
+    col_labels = [f"R{r['round']}: {r['name']}" for r in sorted_races]
+    sorted_race_ids = sorted(all_races.keys(), key=lambda rid: all_races[rid]["round"])
+
+    table_rows = []
+    for pid, p in sorted_players:
+        row = {"Player": p["name"]}
+        for race_id, label in zip(sorted_race_ids, col_labels):
+            pts = player_round_pts.get(pid, {}).get(race_id, {}).get("pts", "-")
+            row[label] = pts
+        row["Total"] = p["total"]
+        table_rows.append(row)
+
+    st.dataframe(pd.DataFrame(table_rows), hide_index=True, use_container_width=True)
+else:
+    st.info("Round-by-round scores will appear here after results are entered.")

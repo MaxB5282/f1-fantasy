@@ -12,7 +12,7 @@ with st.expander("🏁 Regular Race — Qualifying", expanded=False):
     st.dataframe(
         {
             "Position": ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10", "P11+"],
-            "Points":   [15,   14,   13,   12,   11,   10,    9,    8,    7,    6,     5],
+            "Points":   [15,   14,   13,   12,   11,   10,    9,    8,    7,    6,     0],
         },
         hide_index=True,
         use_container_width=True,
@@ -68,7 +68,7 @@ with st.expander("📋 League Rules", expanded=False):
             ],
             "Detail": [
                 "4",
-                "3× multiplier on all points",
+                "2× multiplier on all points",
                 "-20 pts",
             ],
         },

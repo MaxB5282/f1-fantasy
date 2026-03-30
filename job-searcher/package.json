@@ -1,0 +1,14 @@
+{
+  "name": "job-tracker",
+  "version": "1.0.0",
+  "description": "Job search tracker for admin/secretary roles near Morristown, NJ",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "dotenv": "^16.4.7",
+    "express": "^4.19.2"
+  }
+}

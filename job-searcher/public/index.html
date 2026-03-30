@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:    #2563eb;
+      --blue-dk: #1d4ed8;
+      --green:   #16a34a;
+      --amber:   #b45309;
+      --purple:  #7c3aed;
+      --red:     #dc2626;
+      --bg:      #f1f5f9;
+      --card:    #ffffff;
+      --border:  #e2e8f0;
+      --muted:   #64748b;
+      --text:    #0f172a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--blue);
+      color: white;
+      padding: 18px 24px;
+    }
+    .header h1 { font-size: 1.2rem; font-weight: 700; }
+    .header p  { font-size: 0.8rem; opacity: 0.85; margin-top: 3px; }
+
+    /* ── Page layout ── */
+    .page { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+
+    /* ── Section card ── */
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Job board buttons ── */
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .board-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.12s;
+    }
+
+    .board-btn:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: #eff6ff;
+    }
+
+    .board-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+    /* ── Add job form ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 12px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--bg);
+      transition: border-color 0.12s;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: white;
+    }
+
+    textarea { resize: vertical; min-height: 60px; }
+
+    .btn-primary {
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.12s;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn-primary:hover { background: var(--blue-dk); }
+    .btn-primary:active { transform: scale(0.99); }
+
+    /* ── Stats ── */
+    .stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .stat-pill {
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.12s;
+    }
+
+    .stat-pill.all       { background: #e2e8f0; color: var(--muted); }
+    .stat-pill.not-app   { background: #e0e7ff; color: #3730a3; }
+    .stat-pill.applied   { background: #dcfce7; color: var(--green); }
+    .stat-pill.heard     { background: #fef3c7; color: var(--amber); }
+    .stat-pill.offer     { background: #f3e8ff; color: var(--purple); }
+    .stat-pill.rejected  { background: #fee2e2; color: var(--red); }
+
+    .stat-pill.active { border-color: currentColor; }
+
+    /* ── Job cards ── */
+    .job-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 10px;
+      border-left: 4px solid transparent;
+      transition: box-shadow 0.12s;
+    }
+
+    .job-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+    .job-card[data-status="not applied"] { border-left-color: #a5b4fc; }
+    .job-card[data-status="applied"]     { border-left-color: var(--green); }
+    .job-card[data-status="heard back"]  { border-left-color: var(--amber); }
+    .job-card[data-status="offer"]       { border-left-color: var(--purple); }
+    .job-card[data-status="rejected"]    { border-left-color: var(--red); opacity: 0.55; }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .job-title   { font-size: 0.95rem; font-weight: 700; }
+    .job-company { font-size: 0.85rem; color: var(--blue); font-weight: 500; margin-top: 2px; }
+
+    .job-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 8px 0 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 14px;
+    }
+
+    .job-notes {
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .apply-link {
+      background: var(--blue);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: background 0.12s;
+    }
+    .apply-link:hover { background: var(--blue-dk); }
+
+    .status-select {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.78rem;
+      background: white;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .notes-btn, .delete-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.12s;
+    }
+    .notes-btn:hover  { border-color: var(--blue); color: var(--blue); }
+    .delete-btn:hover { border-color: var(--red);  color: var(--red); }
+
+    .date-badge {
+      font-size: 0.72rem;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── Inline notes edit ── */
+    .notes-editor {
+      margin-top: 8px;
+      display: none;
+    }
+    .notes-editor.open { display: block; }
+    .notes-editor textarea { margin-bottom: 6px; }
+    .notes-editor-actions { display: flex; gap: 6px; }
+    .btn-sm {
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+    }
+    .btn-sm.primary { background: var(--blue); color: white; border-color: var(--blue); }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--muted);
+    }
+    .empty .icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty p { font-size: 0.875rem; line-height: 1.6; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--text); color: white;
+      padding: 10px 16px; border-radius: 8px; font-size: 0.82rem;
+      opacity: 0; transform: translateY(6px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none; z-index: 999;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 560px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .board-grid { grid-template-columns: 1fr 1fr; }
+      .page { padding: 16px 12px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Job Tracker</h1>
+  <p>Administrative &amp; secretary roles · Morristown, NJ area · $50k+</p>
+</div>
+
+<div class="page">
+
+  <!-- ── Search the boards ── -->
+  <div class="section">
+    <div class="section-title">Search Job Boards</div>
+    <div class="board-grid">
+      <a class="board-btn" href="https://www.indeed.com/jobs?q=administrative+assistant+secretary+receptionist+office+coordinator&l=Morristown%2C+NJ&radius=20&sc=0kf%3Aattr(EXPLC)%3B" target="_blank" rel="noopener">
+        <span class="board-icon">🔵</span> Indeed
+      </a>
+      <a class="board-btn" href="https://www.linkedin.com/jobs/search/?keywords=administrative%20assistant%20secretary%20receptionist%20office%20coordinator&location=Morristown%2C%20NJ&distance=20&f_TPR=r604800" target="_blank" rel="noopener">
+        <span class="board-icon">💼</span> LinkedIn
+      </a>
+      <a class="board-btn" href="https://www.ziprecruiter.com/jobs-search?search=administrative+assistant+secretary+receptionist&location=Morristown%2C+NJ&radius=20" target="_blank" rel="noopener">
+        <span class="board-icon">🟠</span> ZipRecruiter
+      </a>
+      <a class="board-btn" href="https://www.glassdoor.com/Job/morristown-nj-administrative-assistant-jobs-SRCH_IL.0,13_IC1125705_KO14,37.htm" target="_blank" rel="noopener">
+        <span class="board-icon">🟢</span> Glassdoor
+      </a>
+      <a class="board-btn" href="https://www.simplyhired.com/search?q=administrative+secretary+receptionist&l=Morristown%2C+NJ&radius=20" target="_blank" rel="noopener">
+        <span class="board-icon">🔴</span> SimplyHired
+      </a>
+      <a class="board-btn" href="https://www.governmentjobs.com/careers/newjersey?keywords=administrative+secretary+receptionist&location=Morristown" target="_blank" rel="noopener">
+        <span class="board-icon">🏛️</span> NJ State Jobs
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Add a job ── -->
+  <div class="section">
+    <div class="section-title">Add a Job to Track</div>
+    <form id="add-form" onsubmit="addJob(event)">
+      <div class="form-grid">
+        <div class="full">
+          <label>Job Title *</label>
+          <input id="f-title" type="text" placeholder="e.g. Administrative Assistant" required />
+        </div>
+        <div class="full">
+          <label>Job Posting URL</label>
+          <input id="f-url" type="url" placeholder="Paste the link from Indeed, LinkedIn, etc." />
+        </div>
+        <div>
+          <label>Salary (if listed)</label>
+          <input id="f-salary" type="text" placeholder="e.g. $52,000/yr" />
+        </div>
+        <div>
+          <label>Notes</label>
+          <input id="f-notes" type="text" placeholder="Anything worth remembering" />
+        </div>
+        <div class="full">
+          <button class="btn-primary" type="submit">+ Add to Tracker</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Tracker ── -->
+  <div>
+    <div class="stats" id="stats"></div>
+    <div id="job-list"></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let allJobs = [];
+  let activeFilter = 'all';
+
+  // ── Boot ────────────────────────────────────────────────────────────────────
+  loadJobs();
+
+  // ── Load ────────────────────────────────────────────────────────────────────
+  async function loadJobs() {
+    try {
+      const res = await fetch('/api/jobs');
+      allJobs = await res.json();
+      renderStats();
+      renderJobs();
+    } catch (e) { console.error(e); }
+  }
+
+  // ── Add job ─────────────────────────────────────────────────────────────────
+  async function addJob(e) {
+    e.preventDefault();
+    const body = {
+      title:  document.getElementById('f-title').value,
+      url:    document.getElementById('f-url').value,
+      salary: document.getElementById('f-salary').value,
+      notes:  document.getElementById('f-notes').value,
+    };
+
+    try {
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      document.getElementById('add-form').reset();
+      showToast('Job added!');
+      await loadJobs();
+    } catch (e) { showToast('Error: ' + e.message); }
+  }
+
+  // ── Stats / filter pills ────────────────────────────────────────────────────
+  function renderStats() {
+    const counts = { all: allJobs.length, 'not applied': 0, applied: 0, 'heard back': 0, offer: 0, rejected: 0 };
+    allJobs.forEach(j => { if (counts[j.status] !== undefined) counts[j.status]++; });
+
+    const pills = [
+      { key: 'all',         label: `All (${counts.all})`,                   cls: 'all' },
+      { key: 'not applied', label: `Not Applied (${counts['not applied']})`, cls: 'not-app' },
+      { key: 'applied',     label: `Applied (${counts.applied})`,            cls: 'applied' },
+      { key: 'heard back',  label: `Heard Back (${counts['heard back']})`,   cls: 'heard' },
+      { key: 'offer',       label: `Offer! (${counts.offer})`,               cls: 'offer' },
+      { key: 'rejected',    label: `Rejected (${counts.rejected})`,          cls: 'rejected' },
+    ];
+
+    document.getElementById('stats').innerHTML = pills.map(p =>
+      `<span class="stat-pill ${p.cls} ${activeFilter === p.key ? 'active' : ''}"
+             onclick="setFilter('${p.key}')">${p.label}</span>`
+    ).join('');
+  }
+
+  function setFilter(f) {
+    activeFilter = f;
+    renderStats();
+    renderJobs();
+  }
+
+  // ── Render job list ─────────────────────────────────────────────────────────
+  function renderJobs() {
+    const list = document.getElementById('job-list');
+    const filtered = activeFilter === 'all' ? allJobs : allJobs.filter(j => j.status === activeFilter);
+
+    if (filtered.length === 0) {
+      list.innerHTML = `
+        <div class="empty">
+          <div class="icon">${allJobs.length === 0 ? '📋' : '🔍'}</div>
+          <p>${allJobs.length === 0
+            ? 'No jobs tracked yet.<br>Search the boards above, then paste a job here to start tracking.'
+            : 'No jobs in this category.'}</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    filtered.forEach(job => list.appendChild(buildCard(job)));
+  }
+
+  function buildCard(job) {
+    const card = document.createElement('div');
+    card.className = 'job-card';
+    card.dataset.status = job.status;
+    card.id = 'card-' + job.id;
+
+    const salary = job.salary ? `💰 ${esc(job.salary)}` : '';
+    const date   = job.date_added ? `Added ${job.date_added}` : '';
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div>
+          <div class="job-title">${esc(job.title)}</div>
+          <div class="job-company">${esc(job.company)}</div>
+        </div>
+        <span class="date-badge">${date}</span>
+      </div>
+
+      ${salary ? `<div class="job-meta">${salary}</div>` : ''}
+
+      ${job.notes ? `<div class="job-notes">${esc(job.notes)}</div>` : ''}
+
+      <div class="notes-editor" id="notes-editor-${job.id}">
+        <textarea rows="3" id="notes-text-${job.id}" placeholder="Add notes...">${esc(job.notes || '')}</textarea>
+        <div class="notes-editor-actions">
+          <button class="btn-sm primary" onclick="saveNotes('${job.id}')">Save</button>
+          <button class="btn-sm" onclick="toggleNotes('${job.id}')">Cancel</button>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        ${job.url ? `<a class="apply-link" href="${escAttr(job.url)}" target="_blank" rel="noopener">View &amp; Apply →</a>` : ''}
+        <select class="status-select" onchange="updateStatus('${job.id}', this.value)">
+          <option value="not applied" ${job.status==='not applied' ?'selected':''}>Not Applied</option>
+          <option value="applied"     ${job.status==='applied'     ?'selected':''}>Applied ✓</option>
+          <option value="heard back"  ${job.status==='heard back'  ?'selected':''}>Heard Back 🎉</option>
+          <option value="offer"       ${job.status==='offer'       ?'selected':''}>Got an Offer! 🌟</option>
+          <option value="rejected"    ${job.status==='rejected'    ?'selected':''}>Rejected</option>
+        </select>
+        <button class="notes-btn" onclick="toggleNotes('${job.id}')">📝 Notes</button>
+        <button class="delete-btn" onclick="deleteJob('${job.id}')">Remove</button>
+      </div>`;
+
+    return card;
+  }
+
+  // ── Actions ─────────────────────────────────────────────────────────────────
+  async function updateStatus(id, status) {
+    await patch(id, { status });
+    const job = allJobs.find(j => j.id === id);
+    if (job) job.status = status;
+    const card = document.getElementById('card-' + id);
+    if (card) card.dataset.status = status;
+    renderStats();
+    showToast('Status saved.');
+  }
+
+  function toggleNotes(id) {
+    const editor = document.getElementById('notes-editor-' + id);
+    editor.classList.toggle('open');
+  }
+
+  async function saveNotes(id) {
+    const notes = document.getElementById('notes-text-' + id).value.trim();
+    await patch(id, { notes });
+    const job = allJobs.find(j => j.id === id);
+    if (job) job.notes = notes;
+    document.getElementById('notes-editor-' + id).classList.remove('open');
+    showToast('Notes saved.');
+    renderJobs();
+  }
+
+  async function deleteJob(id) {
+    if (!confirm('Remove this job from your tracker?')) return;
+    await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
+    allJobs = allJobs.filter(j => j.id !== id);
+    renderStats();
+    renderJobs();
+    showToast('Removed.');
+  }
+
+  async function patch(id, body) {
+    try {
+      await fetch(`/api/jobs/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } catch (e) { showToast('Save failed.'); }
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escAttr(s) { return String(s||'').replace(/"/g,'&quot;'); }
+
+  let toastT;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+</script>
+</body>
+</html>

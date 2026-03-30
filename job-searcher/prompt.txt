@@ -1,0 +1,68 @@
+Job Search Agent — Claude Code Prompt
+Paste this into Claude Code to get started:
+
+Build me a Node.js job search agent that runs daily and does the following:
+What it does
+
+Searches the web for administrative/office jobs near Morristown, NJ (within 20 min drive) paying $40k-$65k/year
+Generates a tailored cover letter for each job found
+Emails me the results OR updates a Google Doc with the findings
+Runs on a daily schedule automatically
+
+Job types to search for
+
+Administrative assistant
+Office coordinator / office manager
+Receptionist / front desk
+Data entry clerk
+Records coordinator
+School administrative assistant (she has an education background)
+
+Candidate profile (use this for cover letters)
+
+Has a Bachelor's degree in Education
+Taught elementary school for 2 years (2022-2024) — managed classroom of 25+ students, maintained student records, coordinated with admin on scheduling and compliance docs
+Currently works as a records clerk at a county correctional facility — filing/organizing records, data entry, coordinating across departments
+Key skills: Microsoft Office, Google Workspace, data entry, record management, written/verbal communication, scheduling, filing, organization
+The cover letters should emphasize how teaching experience transfers to admin work: organization, communication, patience, multitasking, managing complex workflows
+
+Technical requirements
+
+Use the Anthropic API (claude-sonnet-4-20250514) with web search tool for finding jobs
+Use the Anthropic API to generate cover letters (batch all jobs into one call for speed)
+For the output, pick whichever is easier to implement:
+
+Option A: Use the Google Docs API to create/update a shared Google Doc
+Option B: Use the Gmail API to email results
+Option C: Just write to a local markdown file that I can check
+
+
+For scheduling: use node-cron for local, or set it up so I can run it as a GitHub Action on a schedule
+Store previously seen jobs (by URL or title+company) so it doesn't show duplicates across runs
+Save everything to a simple JSON file as a local database
+
+Output format
+For each job found, include:
+
+Job title and company
+Location and salary (if listed)
+Direct link to apply
+A personalized cover letter (100-150 words, warm and genuine, not corporate)
+Status field (not applied / applied / heard back)
+
+Project structure
+Keep it simple:
+
+index.js — main script
+config.js — API keys, email, search preferences
+jobs-db.json — stores seen jobs and application status
+.env — for API keys
+README.md — setup instructions
+
+Important
+
+Start with Option C (local markdown file) to get the core working first, then add Google Docs or email
+Make sure the web search actually finds REAL current job listings with real URLs
+Add error handling and retries for API calls
+Log what's happening so I can see progress when it runs
+
